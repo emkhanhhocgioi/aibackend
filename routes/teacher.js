@@ -2,6 +2,7 @@ const router = require('express').Router();
 const teacherController = require('../controller/teacher_controller');
 const answerController = require('../controller/answer_controller');
 const AI_controller = require('../controller/AI_controller');
+const studentController = require('../controller/student_controller');
 const { teacherTokenVerify } = require('../midlewares/teacherverify');
 const multer = require('multer');
 
@@ -27,18 +28,27 @@ const upload_all = multer({
   }
 });
 
-
+// Teacher info
+router.get('/profile', teacherTokenVerify, teacherController.GetTeacherById);
 
 // Teacher AI question answer generate route
 router.post('/ai/question-answer/generate', teacherTokenVerify, AI_controller.ai_qa_gen);
 router.post('/ai/auto-grading', teacherTokenVerify, AI_controller.Ai_auto_grade);
+router.post('/ai/auto-grading/rubric', teacherTokenVerify, AI_controller.Teacher_AI_grading_Base_on_rubic);
 router.post('/ai/auto-grading/file', teacherTokenVerify, AI_controller.Ai_Auto_Grading_from_file);
 router.post('/ai/auto-grading/image', teacherTokenVerify, AI_controller.AI_Auto_Grading_from_image);
 
 
-// Teacher class management route
+// Teacher settings routes
+router.patch('/settings', teacherTokenVerify, teacherController.updateAccountSettings);
+router.patch('/settings/password', teacherTokenVerify, teacherController.changePassword);
+
+// Teacher class and student management route
 router.get('/class', teacherTokenVerify, teacherController.TeacherGetClass);
 router.get('/class/subjects', teacherTokenVerify, teacherController.TeacherGetSubjectClass);
+// Student
+router.patch('/students/:studentId', teacherTokenVerify, studentController.updateStudentConductAndPerformance);
+
 
 
 // Teacher test management route
@@ -48,8 +58,8 @@ router.post('/tests/generate', teacherTokenVerify, AI_controller.Ai_Generate_Que
 router.get('/tests/:testId', teacherTokenVerify, teacherController.GetTestDetailById);
 router.delete('/tests/:testId', teacherTokenVerify, teacherController.DeleteTestById);
 router.put('/tests/:testId', teacherTokenVerify, teacherController.EditTestById);
-router.get('/tests/:testId/submitted-answers', teacherController.getSubmittedAnswers);
-router.put('/tests/answers/:answerId/grade', teacherController.TeacherGradingAsnwer);   
+router.get('/tests/:testId/submitted-answers', teacherTokenVerify, teacherController.getSubmittedAnswers);
+router.put('/tests/answers/:answerId/grade', teacherTokenVerify, teacherController.TeacherGradingAsnwer);   
 
 // Teacher question management route
 router.post('/tests/:testId/questions', teacherTokenVerify, upload.array('files'), teacherController.CreateQuestions);
@@ -65,9 +75,21 @@ router.get('/lessons', teacherTokenVerify, teacherController.getTeacherLessons);
 router.delete('/lessons/:lessonId', teacherTokenVerify, teacherController.DeleteLessonById);
 router.put('/lessons/:lessonId', teacherTokenVerify, upload_all.single('file'), teacherController.UpdateLesson);
 router.get('/lessons/:lessonId', teacherTokenVerify, teacherController.TeacherGetLessonsById);
+router.patch('/lessons/:lessonId/assign-test', teacherTokenVerify, teacherController.AsignedTestToLesson);
 
 
 // Get analytics data
 router.get('/analytics/class/average-grades', teacherTokenVerify, teacherController.ClassAvarageGrades);
 router.get('/analytics/tests/performance', teacherTokenVerify, teacherController.TestsAnylytics);
+router.get('/analytics/student/average-grade', teacherTokenVerify, teacherController.getStudentAverageGradeBySubject);
+router.get('/analytics/class/students/all-subjects-average', teacherTokenVerify, teacherController.getClassStudentsAllSubjectsAverage);
+router.post('/analytics/class/update-average-grades', teacherTokenVerify, teacherController.updateClassStudentsAverageGrade);
+
+//Schedule routes
+router.get('/schedule', teacherTokenVerify, teacherController.getTeacherSchedule);
+
+// mail routes
+router.post('/send-email/homeroom', teacherTokenVerify, teacherController.teacherMailHomeroomClass);
+router.post('/send-email/subject/class', teacherTokenVerify, teacherController.teacherMailSubjectClass);
+
 module.exports = router;
